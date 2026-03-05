@@ -57,10 +57,8 @@ void load_ui_func() {
   LOAD_FUNC(close_ui);
   LOAD_FUNC(refresh_ui);
 
-  LOAD_FUNC(get_ui_info);
+  LOAD_FUNC(log_ui_info);
 
-  LOAD_FUNC(set_ui_map);
-  LOAD_FUNC(set_ui_entity_stack);
   LOAD_FUNC(set_ui_input_queue);
 
   LOAD_FUNC(newwin_ui);
@@ -69,8 +67,9 @@ void load_ui_func() {
   LOAD_FUNC(addsubwin_ui);
   LOAD_FUNC(movesubwin_ui);
   LOAD_FUNC(rmsubwin_ui);
-  LOAD_FUNC(getwinyx);
-  LOAD_FUNC(getwinhw);
+  LOAD_FUNC(getwinyx_ui);
+  LOAD_FUNC(getwinhw_ui);
+  LOAD_FUNC(bdbfwin_ui);
 
 #undef LOAD_FUNC
 }

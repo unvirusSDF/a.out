@@ -25,11 +25,11 @@ uint8_t run_frame(void);
 #endif
 
 // variables
-QUAL input_queue_t input_queue INIT({});
+QUAL volatile input_queue_t input_queue INIT({});
 QUAL entity_t entities[16] INIT({});
 QUAL uint64_t millis_since_launch INIT({});
 QUAL uint64_t frame INIT({});
-QUAL map_chunk_t map;
+QUAL map_t map;
 
 #undef QUAL
 #undef INIT
@@ -51,9 +51,7 @@ QUAL map_chunk_t map;
   }
 
 #define LOG(FMT, ...)                                                          \
-  {                                                                            \
-    fprintf(stderr, "%lu : " FMT "\n", millis_since_launch, ##__VA_ARGS__);    \
-  }
+  fprintf(stderr, "%4lu (core): " FMT "\n", frame, ##__VA_ARGS__)
 
 #ifdef DEBUG_
 #define DEBUG(code) code

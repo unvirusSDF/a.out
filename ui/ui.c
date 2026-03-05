@@ -1,8 +1,10 @@
 #include <ncurses.h>
+#include <stdlib.h>
 
 #include <pthread.h>
 
 #include "../input_codes.h"
+#include "../ui.h"
 #include "./decl.h"
 
 void init_keys(void) {
@@ -32,9 +34,12 @@ void init_ncurses(void) {
 }
 
 pthread_t input_listener_pthread;
+
 void init_ui(void) {
   init_keys();
   init_ncurses();
+  int h, w;
+  getmaxyx(stdscr, h, w);
 
   listening_inputs = 1;
   pthread_create(&input_listener_pthread, NULL, input_listener, NULL);
@@ -51,68 +56,115 @@ void close_ui(void) {
 }
 
 void refresh_ui(void) {
+  for (uint8_t i = 0; i < 64; i++) {
+    window_t const *const win = &window_pool.wins[i];
+    if (window_pool.is_space_free << i && win->attr == WINDOW_ATTR_MAIN)
+      display_window(win);
+  }
   frame_count++;
-  WINDOW *win = newwin(0, 0, 0, 0); // should maybe put the window static
-  keypad(win, true);
-  if (!active_map) {
-    fprintf(stderr, "no map ;-;\n");
-    return;
-  } // nothing to draw
-  wresize(win, active_map->width + 2, active_map->height + 2);
-  mvwin(win, 0, 0);
-  box(win, 0, 0);
-
-  for (uint8_t i = 0; i < active_map->width; i++) {
-    for (uint8_t j = 0; j < active_map->height; j++) {
-      wattrset(win, map_texture_to_terrain(&active_map->terrain[i][j]));
-      mvwaddch(win, i + 1, j + 1, active_map->terrain[i][j].obstacle);
-    }
-  }
-  if (entities.data) {
-    for (const entity_t *e = entities.data; e < entities.data + entities.count;
-         e++) {
-      wattrset(win,
-               A_UNDERLINE |
-                   COLOR_PAIR(
-                       ((active_map->terrain[e->y][e->x].floor & 0b111) << 3) |
-                       COLOR_WHITE));
-      mvwprintw(win, e->y + 1, e->x + 1, "%c", e->type);
-    }
-  }
-
-  wrefresh(win);
-
-  refresh();
-
-  delwin(win);
 }
 
-const char *get_ui_info(void) { return "devel test, TUI build on ncurses\n"; }
-
-void set_ui_map(const map_chunk_t *p_map_chunk) { active_map = p_map_chunk; }
-
-void set_ui_entity_stack(const entity_t *p_buffer, uint16_t count) {
-  entities.data = p_buffer;
-  entities.count = count;
+void log_ui_info(void) {
+  fprintf(stderr, "devel test, TUI build on ncurses\n");
 }
 
-void set_ui_input_queue(input_queue_t *input_queue_) {
+void set_ui_input_queue(volatile input_queue_t *input_queue_) {
   input_queue = input_queue_;
 }
 
-window_t *newwin_ui(uint32_t height, uint32_t with) {}
+window_t *newwin_ui(uint32_t height, uint32_t width, window_type_e type) {
+  uint8_t i = 0;
+  for (; window_pool.is_space_free & (1 << i); i++)
+    if (i >= 64) {
+      LOG("window count exeded max capacity (64)");
+      return NULL;
+    }
 
-void delwin_ui(window_t *win) {}
+  window_pool.is_space_free |= 1 << i;
+  uint32_t h, w;
+  getmaxyx(stdscr, h, w);
+  uint8_t fullscreen = height && width;
+  window_pool.wins[i] = (window_t){
+      .type = type,
+      .attr = WINDOW_ATTR_MAIN | (fullscreen ? WINDOW_ATTR_FULLSCREEN : 0),
+      .h = height,
+      .w = width,
+  };
+  return window_pool.wins + i;
+}
 
-void resizewin_ui(window_t *win, uint32_t new_height, uint32_t new_width) {}
+void delwin_ui(window_t *win) {
+  if (win->type == WINDOW_TYPE_NONE && win->data.subw.wins) {
+    free(win->data.subw.wins);
+  }
+  uint8_t handle = window_pool.wins - win;
+  window_pool.is_space_free |= 1 << handle;
+}
+void resizewin_ui(window_t *win, uint32_t new_height, uint32_t new_width) {
+  win->h = new_height;
+  win->w = new_width;
+}
 
-void addsubwin_ui(window_t *root, window_t *subwin, uint32_t y, uint32_t x) {}
+void addsubwin_ui(window_t *root, window_t *subwin, uint32_t y, uint32_t x) {
+  if (root->type != WINDOW_TYPE_NONE) {
+    LOG("tryied to add a subwindow to a non 'NONE' type windowed"
+        " (type was %hhu) , aborting current subwindowin procedure",
+        root->type);
+    return;
+  }
+  subwin->attr &= ~WINDOW_ATTR_MAIN;
+  subwin->parent = root;
+  subwin->y = y, subwin->x = x;
+  if (!root->data.subw.wins) {
+    root->data.subw.wins =
+        calloc(root->data.subw.cap = 10, sizeof(*root->data.subw.wins));
+    root->data.subw.wins[0] = subwin;
+    root->data.subw.count = 1;
+    return;
+  }
+  if (root->data.subw.count >= root->data.subw.cap) {
+    root->data.subw.wins =
+        realloc(root->data.subw.wins,
+                (root->data.subw.cap *= 2) * sizeof(*root->data.subw.wins));
+    root->data.subw.wins[root->data.subw.count++] = subwin;
+    return;
+  }
+  for (uint32_t i = 0; i <= root->data.subw.count; i++) {
+    if (!root->data.subw.wins[i]) {
+      root->data.subw.wins[i] = subwin;
+      root->data.subw.count++;
+      return;
+    }
+  }
+  LOG("failed to attach subwindow %p on root %p", subwin, root);
+}
 
 void movesubwin_ui(window_t *root, window_t *subwin, uint32_t new_y,
                    uint32_t new_x) {}
 
-void rmsubwin_ui(window_t *root, window_t *subwin) {}
+void rmsubwin_ui(window_t *root, window_t *subwin) {
+  subwin->attr |= WINDOW_ATTR_MAIN; // not a subwindow anymore but can be drawn
+  for (uint32_t i = 0; i < root->data.subw.count; i++)
+    if (root->data.subw.wins[i] == subwin)
+      root->data.subw.wins[i] = NULL;
+  root->data.subw.count--;
+}
 
-void getwinyx(window_t *win, uint32_t *y, uint32_t *x) {}
+void getwinyx_ui(const window_t *win, uint32_t *y, uint32_t *x) {
+  *y = win->y;
+  *x = win->x;
+}
 
-void getwinhw(window_t *win, uint32_t *height, uint32_t *width) {}
+void getwinhw_ui(const window_t *win, uint32_t *height, uint32_t *width) {
+  *height = win->h;
+  *width = win->w;
+}
+
+void bdbfwin_ui(window_t *win, void *data) {
+  if (win->type)
+    win->data.data = data;
+  else
+    LOG("couldn't bind buffer %p to window %p, reason :"
+        " cannot bind buffer to window of type 'NONE'",
+        data, win);
+}

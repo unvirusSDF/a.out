@@ -1,30 +1,45 @@
 #pragma once
 #include <stdint.h>
 
-typedef struct {
+struct {
   uint8_t floor;
   uint8_t roof;
   uint8_t obstacle;
-  uint8_t temperature;
-} terrain_t;
+  int8_t temperature;
+} typedef terrain_t;
 
-typedef struct {
-  terrain_t terrain[64][64];
+struct {
+  terrain_t **terrain;
   uint8_t width;
   uint8_t height;
-} map_chunk_t; // at the beginning this was 128*128 but 16kB is a better unit
-               // than 65kB
+} typedef map_t;
 
-typedef struct {
+struct {
   uint16_t hp;
   uint16_t stamina;
   int16_t x;
   int16_t y;
   uint16_t type;
-} entity_t;
+} typedef entity_t;
 
-typedef struct {
+struct {
   uint8_t data[256];
   uint8_t in;
   uint8_t out;
-} input_queue_t;
+} typedef input_queue_t;
+
+enum window_type_e : uint8_t {
+  // default, does nothing
+  // used when the window is made to contain subwindows
+  WINDOW_TYPE_NONE = 0,
+
+  // make to print map from a buffer and things like that
+  WINDOW_TYPE_MAP,
+
+  // have choices as char* + a pointer as a selector
+  WINDOW_TYPE_MENU,
+
+  // read inputs from raw char buffer
+  WINDOW_TYPE_RAW,
+
+} typedef window_type_e;

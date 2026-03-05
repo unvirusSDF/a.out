@@ -30,31 +30,31 @@ uint8_t run_frame(void) {
         break;
 
       case CORE_UP:
-        if (entities &&
+        /*if (entities &&
             map.terrain[entities->y - 1][entities->x].obstacle == ' ') {
           entities->y--;
-        }
+        }*/
         break;
 
       case CORE_DOWN:
-        if (entities &&
+        /*if (entities &&
             map.terrain[entities->y + 1][entities->x].obstacle == ' ') {
           entities->y++;
-        }
+        }*/
         break;
 
       case CORE_LEFT:
-        if (entities &&
+        /*if (entities &&
             map.terrain[entities->y][entities->x - 1].obstacle == ' ') {
           entities->x--;
-        }
+        }*/
         break;
 
       case CORE_RIGHT:
-        if (entities &&
+        /*if (entities &&
             map.terrain[entities->y][entities->x + 1].obstacle == ' ') {
           entities->x++;
-        }
+        }*/
         break;
 
       case CORE_EXIT:
