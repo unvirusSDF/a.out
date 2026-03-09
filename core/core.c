@@ -1,5 +1,4 @@
 #include "../header.h"
-#include "../input_codes.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,34 +28,6 @@ uint8_t run_frame(void) {
       case CORE_NONE:
         break;
 
-      case CORE_UP:
-        /*if (entities &&
-            map.terrain[entities->y - 1][entities->x].obstacle == ' ') {
-          entities->y--;
-        }*/
-        break;
-
-      case CORE_DOWN:
-        /*if (entities &&
-            map.terrain[entities->y + 1][entities->x].obstacle == ' ') {
-          entities->y++;
-        }*/
-        break;
-
-      case CORE_LEFT:
-        /*if (entities &&
-            map.terrain[entities->y][entities->x - 1].obstacle == ' ') {
-          entities->x--;
-        }*/
-        break;
-
-      case CORE_RIGHT:
-        /*if (entities &&
-            map.terrain[entities->y][entities->x + 1].obstacle == ' ') {
-          entities->x++;
-        }*/
-        break;
-
       case CORE_EXIT:
         quit();
         break;
@@ -65,8 +36,11 @@ uint8_t run_frame(void) {
         break;
       }
     return 1;
-  } else
-    return 0;
+  } else if (something_happend_counter) {
+    something_happend_counter = 0;
+    return 1;
+  }
+  return 0;
 }
 
 uint8_t *next_input(uint8_t *n) {

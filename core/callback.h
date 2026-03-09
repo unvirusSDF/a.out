@@ -1,0 +1,5 @@
+#pragma once
+
+#include "../header.h"
+
+void dflt_menu_input_clbk(WINDOW *const, enum input_code_e const, void *data);

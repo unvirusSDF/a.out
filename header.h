@@ -24,12 +24,26 @@ uint8_t run_frame(void);
 #define INIT(a) = a
 #endif
 
+// made to be passed as buffer wich reinterpret them as
+// struct{
+//   uint16_t selector, choices_n;
+//   const char*const* choices
+// }
+struct menu_t {
+  uint32_t selector, choices_n;
+  char const *const *choices;
+  void (**choices_ppfn)(void);
+} typedef menu_t;
+
 // variables
 QUAL volatile input_queue_t input_queue INIT({});
 QUAL entity_t entities[16] INIT({});
 QUAL uint64_t millis_since_launch INIT({});
 QUAL uint64_t frame INIT({});
 QUAL map_t map;
+
+// TODO: must be atomic but I'm to lazy now
+QUAL volatile uint8_t something_happend_counter INIT({});
 
 #undef QUAL
 #undef INIT
@@ -50,8 +64,10 @@ QUAL map_t map;
     a = b;                                                                     \
   }
 
+#ifdef _STDIO_H
 #define LOG(FMT, ...)                                                          \
   fprintf(stderr, "%4lu (core): " FMT "\n", frame, ##__VA_ARGS__)
+#endif
 
 #ifdef DEBUG_
 #define DEBUG(code) code

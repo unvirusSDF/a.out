@@ -5,7 +5,9 @@
 #include <ncurses.h>
 #include <stddef.h>
 
+#define WINDOW window_t
 #include "../types.h"
+#undef WINDOW
 
 // describe how the window should behave
 enum window_attr_t : uint8_t {
@@ -22,16 +24,16 @@ struct window_t {
   uint32_t y, x, h, w;
   struct window_t *parent;
   union {
-    const volatile void *data;
+    volatile void const *data;
     struct {
       uint16_t count, cap;
       struct window_t **wins;
     } subw;
   } data;
+  WindowInputCallback pfnInputCallback;
 } typedef window_t;
 
 void init_color_map(void);
-int map_texture_to_terrain(const terrain_t *);
 void display_window(window_t const *const);
 void *input_listener(void *);
 
@@ -56,16 +58,15 @@ void *input_listener(void *);
 
 QUAL uint64_t frame_count INIT({});
 
-QUAL volatile input_queue_t *input_queue INIT(NULL);
-
 QUAL uint8_t keybinds[KEY_MAX] INIT({});
-
 QUAL volatile uint8_t listening_inputs INIT(0);
+
+QUAL window_t *current INIT({});
 
 QUAL struct window_pool_t {
   uint64_t is_space_free;
   window_t wins[64];
-} window_pool;
+} window_pool INIT({});
 
 #undef QUAL
 #undef INIT

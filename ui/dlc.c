@@ -6,9 +6,14 @@ void *input_listener(void *) {
   while (listening_inputs) {
     if ((c = getch()) != ERR)
       if (keybinds[c]) {
-        input_queue->data[input_queue->in++] = keybinds[c];
-        // fprintf(stderr, "input detected (%c) (in : %hhu)\n", c,
-        // input_queue->in); fflush(stderr);
+        if (current) {
+          if (current->pfnInputCallback) {
+            // compilers hate this one simple trick :
+            // (this made the compiler shut up about dicarded type qualifier)
+            uintptr_t data = (uintptr_t)current->data.data;
+            current->pfnInputCallback(current, keybinds[c], (void *)data);
+          }
+        }
       }
   }
 }
@@ -48,7 +53,7 @@ void init_color_map(void) {
 //
 
 // try to follow the plan described above
-int map_texture_to_terrain(const terrain_t *t) {
+static inline int map_texture_to_terrain(const terrain_t *t) {
   int attributes = {};
   if (!t->roof)
     attributes |= A_BOLD;
@@ -66,7 +71,7 @@ void display_window(window_t const *const win) {
   case WINDOW_TYPE_NONE: {
     off_y += win->y;
     off_x += win->x;
-    for (uint32_t i = 0; i < win->data.subw.count; i++) {
+    for (uint32_t i = 0; i < win->data.subw.cap; i++) {
       if (win->data.subw.wins[i]) {
         display_window(win->data.subw.wins[i]);
       }
@@ -102,6 +107,7 @@ void display_window(window_t const *const win) {
       volatile struct {
         uint32_t selector, choices_n;
         char const *const *choices;
+        // void(*_)(void); //may be omited
       } const *data = win->data.data;
       choices = data->choices;
       choices_n = data->choices_n;

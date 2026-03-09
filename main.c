@@ -7,6 +7,7 @@
 
 #include "./header.h"
 #include "./types.h"
+#include "core/callback.h"
 #include "ui.h"
 
 void load_ui_lib(const char *path);
@@ -22,6 +23,10 @@ uint64_t get_time_millis() {
   return ret;
 }
 
+void quit_wrap(void){
+  quit();
+}
+
 int main() {
   uint64_t millis_at_launch = get_time_millis();
   freopen("./log", "w+", stderr);
@@ -32,9 +37,6 @@ int main() {
 
   log_ui_info();
 
-  set_ui_input_queue(&input_queue); // segfault if not set before init bc of the
-                                    // input_listener, so to stay uniform every
-                                    // variables are set here at first
   init_ui();
 
   map_t map = {
@@ -51,28 +53,25 @@ int main() {
           .floor = 3, .roof = 0, .obstacle = ' ', .temperature = 20};
     }
   }
-  WINDOW *map_win = newwin_ui(map.height, map.width, WINDOW_TYPE_MAP);
-  bdbfwin_ui(map_win, &map);
+  // WINDOW *map_win = newwin_ui(map.height, map.width, WINDOW_TYPE_MAP);
+  // bdbfwin_ui(map_win, &map);
 
-  char **buf = malloc(40 * sizeof(*buf));
-  char *alloc = malloc(40 * sizeof(char[41]));
-  for (uint32_t i = 0; i < 40; i++) {
-    buf[i] = alloc + 41 * i;
-    buf[40] = '\0';
-    for (uint32_t j = 0; j < 39; j++) {
-      buf[i][j] = 'a';
-    }
-  }
-  struct {
-    uint32_t selector, choices_n;
-    const char **choices;
-  } menu_buf = {.selector = 5, .choices_n = 40, .choices = (const char **)buf};
+  char const* buf[] = {
+    "do nothing",
+    "exit",
+  };
+
+  menu_t menu = {.selector = 0,
+                 .choices_n = 2,
+                 .choices = (const char **)buf,
+                 .choices_ppfn = (void(*[])(void)){NULL, quit},
+  };
   WINDOW *menu_win = newwin_ui(40, 40, WINDOW_TYPE_MENU);
-  bdbfwin_ui(menu_win, &menu_buf);
+  bdbfwin_ui(menu_win, &menu);
+  bdwininpclbk_ui(menu_win, dflt_menu_input_clbk);
 
   WINDOW *container = newwin_ui(0, 0, WINDOW_TYPE_NONE);
   addsubwin_ui(container, menu_win, 0, 0);
-  addsubwin_ui(container, map_win, 0, 50);
 
   refresh_ui();
 
@@ -90,15 +89,15 @@ int main() {
   }
 
   delwin_ui(container);
-  delwin_ui(map_win);
   delwin_ui(menu_win);
 
-  fprintf(stderr, "quited after %lums, at frame %lu\narverage fps : %3.2f\n",
+  fprintf(stderr, "quited after %lums, at frame %lu\narverage spf : %3.2f\n",
           millis_since_launch, frame,
           (float)millis_since_launch / (1000. * (float)frame));
 
   close_ui();
   free(map.terrain);
+  free(map_buffer);
 
   unload_ui();
 

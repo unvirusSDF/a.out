@@ -43,3 +43,21 @@ enum window_type_e : uint8_t {
   WINDOW_TYPE_RAW,
 
 } typedef window_type_e;
+
+struct WINDOW typedef WINDOW;
+
+enum input_code_e : uint8_t {
+
+  CORE_NONE = 0x00,
+  CORE_UP = 0x01,
+  CORE_DOWN = 0x02,
+  CORE_LEFT = 0x03,
+  CORE_RIGHT = 0x04,
+  CORE_SELECT,
+
+  CORE_EXIT,
+
+};
+
+typedef void (*WindowInputCallback)(WINDOW *const, enum input_code_e const,
+                                    void *data);

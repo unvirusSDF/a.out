@@ -6,6 +6,7 @@ eval cc -c main.c -O5 -std=c23
 eval cc -c loader.c -O5 -std=c23
 
 eval cc -c core/core.c -O5 -std=c23
+eval cc -c core/callback.c -O5 -std=c23
 
 eval cc -x c -c -DIMPL -DCORE ui.h -O5 -std=c23
 eval cc -x c -c -DIMPL header.h -O5 -std=c23
