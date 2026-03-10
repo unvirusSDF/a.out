@@ -93,8 +93,10 @@ void getwinhw_ui(const WINDOW \*win, uint32_t \*height, uint32_t \*width)
 
 ### bdbfwin_ui
 void \*bdbfwin_ui(WINDOW \*win, void \*new_buffer)
+change the buffer atached to the window, return the former one
 
 ### bdwininpclbk_ui
 void bdwininpclbk_ui(WINDOW \*win, window_input_callback_pfn clbk)
+set or change the input callback
 
 ## global variables

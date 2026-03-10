@@ -16,6 +16,7 @@ void *input_listener(void *) {
         }
       }
   }
+  return NULL;
 }
 
 #define COLOR_X_LIST()                                                         \
