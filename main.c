@@ -23,9 +23,7 @@ uint64_t get_time_millis() {
   return ret;
 }
 
-void quit_wrap(void){
-  quit();
-}
+void quit_wrap(void) { quit(); }
 
 int main() {
   uint64_t millis_at_launch = get_time_millis();
@@ -56,21 +54,30 @@ int main() {
   // WINDOW *map_win = newwin_ui(map.height, map.width, WINDOW_TYPE_MAP);
   // bdbfwin_ui(map_win, &map);
 
-  char const* buf[] = {
-    "do nothing",
-    "exit",
+  char const *buf[] = {
+      "do nothing",
+      "exit",
   };
 
-  menu_t menu = {.selector = 0,
-                 .choices_n = 2,
-                 .choices = (const char **)buf,
-                 .choices_ppfn = (void(*[])(void)){NULL, quit},
+  menu_t menu = {
+      .selector = 0,
+      .choices_n = 2,
+      .choices = (const char **)buf,
+      .choices_ppfn = (void (*[])(void)){NULL, quit_wrap},
   };
-  WINDOW *menu_win = newwin_ui(40, 40, WINDOW_TYPE_MENU);
-  bdbfwin_ui(menu_win, &menu);
-  bdwininpclbk_ui(menu_win, dflt_menu_input_clbk);
+  WINDOW *menu_win = newwin_ui(&(window_create_info_t){
+      .height = 40,
+      .width = 40,
+      .type = WINDOW_TYPE_MENU,
+      .pbuffer = &menu,
+      .pfn_input_callback = dflt_menu_input_clbk,
+  });
 
-  WINDOW *container = newwin_ui(0, 0, WINDOW_TYPE_NONE);
+  WINDOW *container = newwin_ui(&(window_create_info_t){
+      .height = 0,
+      .width = 0,
+      .type = WINDOW_TYPE_NONE,
+  });
   addsubwin_ui(container, menu_win, 0, 0);
 
   refresh_ui();

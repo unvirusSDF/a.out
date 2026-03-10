@@ -30,7 +30,7 @@ struct window_t {
       struct window_t **wins;
     } subw;
   } data;
-  WindowInputCallback pfnInputCallback;
+  window_input_callback_pfn pfn_input_callback;
 } typedef window_t;
 
 void init_color_map(void);

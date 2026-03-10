@@ -7,11 +7,11 @@ void *input_listener(void *) {
     if ((c = getch()) != ERR)
       if (keybinds[c]) {
         if (current) {
-          if (current->pfnInputCallback) {
+          if (current->pfn_input_callback) {
             // compilers hate this one simple trick :
             // (this made the compiler shut up about dicarded type qualifier)
             uintptr_t data = (uintptr_t)current->data.data;
-            current->pfnInputCallback(current, keybinds[c], (void *)data);
+            current->pfn_input_callback(current, keybinds[c], (void *)data);
           }
         }
       }
@@ -83,7 +83,11 @@ void display_window(window_t const *const win) {
   case WINDOW_TYPE_MAP: {
     WINDOW *nc_win =
         newwin(win->h + 2, win->w + 2, win->y + off_y, win->x + off_x);
+    if (win == current)
+      wattron(nc_win, A_BOLD);
     box(nc_win, 0, 0);
+    if (win == current)
+      wattroff(nc_win, A_BOLD);
     map_t volatile const *const map = win->data.data;
     for (uint32_t i = 0; i < map->height; i++) {
       for (uint32_t j = 0; j < map->width; j++) {
@@ -98,7 +102,11 @@ void display_window(window_t const *const win) {
   case WINDOW_TYPE_MENU: {
     WINDOW *nc_win =
         newwin(win->h + 2, win->w + 4, win->y + off_y, win->x + off_x);
+    if (win == current)
+      wattron(nc_win, A_BOLD);
     box(nc_win, 0, 0);
+    if (win == current)
+      wattroff(nc_win, A_BOLD);
 
     const char *const *choices;
     uint32_t choices_n;
@@ -130,7 +138,11 @@ void display_window(window_t const *const win) {
   case WINDOW_TYPE_RAW: {
     WINDOW *nc_win =
         newwin(win->h + 2, win->w + 2, win->y + off_y, win->x + off_x);
+    if (win == current)
+      wattron(nc_win, A_BOLD);
     box(nc_win, 0, 0);
+    if (win == current)
+      wattroff(nc_win, A_BOLD);
     char const *volatile const *raw_data = win->data.data;
     for (uint32_t i = 1; *raw_data; i++, raw_data++) {
       mvwaddstr(nc_win, i, 1, *raw_data);

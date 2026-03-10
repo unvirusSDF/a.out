@@ -30,7 +30,7 @@ QUAL void fn(refresh_ui)(void); // new frame signal
 
 QUAL void fn(log_ui_info)(void); // infos about the ui in a string
 
-QUAL WINDOW *fn(newwin_ui)(uint32_t height, uint32_t width, window_type_e type);
+QUAL WINDOW *fn(newwin_ui)(window_create_info_t const *const);
 
 QUAL void fn(delwin_ui)(WINDOW *win);
 
@@ -49,9 +49,10 @@ QUAL void fn(getwinyx_ui)(const WINDOW *win, uint32_t *y, uint32_t *x);
 
 QUAL void fn(getwinhw_ui)(const WINDOW *win, uint32_t *height, uint32_t *width);
 
-QUAL void fn(bdbfwin_ui)(WINDOW *win, void *new_buffer);
+QUAL void *fn(bdbfwin_ui)(WINDOW *win, void *new_buffer);
 
-QUAL void fn(bdwininpclbk_ui)(WINDOW *win, WindowInputCallback pfnCallback);
+QUAL void fn(bdwininpclbk_ui)(WINDOW *win,
+                              window_input_callback_pfn pfnCallback);
 
 #undef fn
 #undef QUAL

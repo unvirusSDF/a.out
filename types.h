@@ -10,8 +10,8 @@ struct {
 
 struct {
   terrain_t **terrain;
-  uint8_t width;
-  uint8_t height;
+  uint16_t height;
+  uint16_t width;
 } typedef map_t;
 
 struct {
@@ -59,5 +59,18 @@ enum input_code_e : uint8_t {
 
 };
 
-typedef void (*WindowInputCallback)(WINDOW *const, enum input_code_e const,
-                                    void *data);
+typedef void (*window_input_callback_pfn)(WINDOW *const,
+                                          enum input_code_e const, void *data);
+
+struct window_create_info_t {
+  uint32_t height, width;
+  window_type_e type;
+  union {
+    const void *pbuffer;
+    // struct{
+    //   const WINDOW **ppsubwindows;
+    //   uint16_t subwindow_count;
+    // };
+  };
+  window_input_callback_pfn pfn_input_callback;
+} typedef window_create_info_t;

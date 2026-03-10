@@ -7,10 +7,10 @@
 #include "./decl.h"
 
 void init_keys(void) {
-  keybinds['s'] = CORE_DOWN;
-  keybinds['z'] = CORE_UP;
-  keybinds['q'] = CORE_LEFT;
-  keybinds['d'] = CORE_RIGHT;
+  keybinds[KEY_DOWN] = keybinds['s'] = CORE_DOWN;
+  keybinds[KEY_UP] = keybinds['z'] = CORE_UP;
+  keybinds[KEY_LEFT] = keybinds['q'] = CORE_LEFT;
+  keybinds[KEY_RIGHT] = keybinds['d'] = CORE_RIGHT;
   keybinds['x'] = CORE_EXIT;
   keybinds['\n'] = CORE_SELECT;
 }
@@ -68,7 +68,7 @@ void log_ui_info(void) {
   fprintf(stderr, "devel test, TUI build on ncurses\n");
 }
 
-window_t *newwin_ui(uint32_t height, uint32_t width, window_type_e type) {
+window_t *newwin_ui(window_create_info_t const *const ci) {
   uint8_t i = 0;
   for (; window_pool.is_space_free & (1 << i); i++)
     if (i >= 64) {
@@ -79,14 +79,21 @@ window_t *newwin_ui(uint32_t height, uint32_t width, window_type_e type) {
   window_pool.is_space_free |= 1 << i;
   uint32_t h, w;
   getmaxyx(stdscr, h, w);
-  uint8_t fullscreen = height && width;
+
+  uint8_t fullscreen = ci->height && ci->width;
   window_pool.wins[i] = (window_t){
-      .type = type,
+      .type = ci->type,
       .attr = WINDOW_ATTR_MAIN | (fullscreen ? WINDOW_ATTR_FULLSCREEN : 0),
-      .h = height,
-      .w = width,
+      .h = ci->height,
+      .w = ci->width,
+      .pfn_input_callback = ci->pfn_input_callback,
   };
-  if (type == WINDOW_TYPE_MENU) {
+
+  if (ci->type) {
+    window_pool.wins[i].data.data = ci->pbuffer;
+  }
+
+  if (!current) {
     current = window_pool.wins + i;
   }
   return window_pool.wins + i;
@@ -169,15 +176,18 @@ void getwinhw_ui(const window_t *win, uint32_t *height, uint32_t *width) {
   *width = win->w;
 }
 
-void bdbfwin_ui(window_t *win, void *data) {
-  if (win->type)
-    win->data.data = data;
-  else
+void *bdbfwin_ui(window_t *win, void *data) {
+  if (!win->type) {
     LOG("couldn't bind buffer %p to window %p, reason :"
         " cannot bind buffer to window of type 'NONE'",
         data, win);
+    return NULL;
+  }
+  uintptr_t tmp = (uintptr_t)win->data.data;
+  win->data.data = data;
+  return (void *)tmp;
 }
 
-void bdwininpclbk_ui(window_t *win, WindowInputCallback pfn) {
-  win->pfnInputCallback = pfn;
+void bdwininpclbk_ui(window_t *win, window_input_callback_pfn pfn) {
+  win->pfn_input_callback = pfn;
 }
