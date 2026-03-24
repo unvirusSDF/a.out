@@ -3,3 +3,6 @@ a.out
 strucure.md
 *.sh
 *.so
+*.o
+core/*.o
+ui/*.o
