@@ -2,26 +2,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define CORE
 #include "ui.h"
 
 static void *lib = NULL;
-
-// for autocompletion's sake
-/*
-
-  init_ui
-  close_ui
-  refresh_ui
-
-  get_ui_info
-
-  set_ui_map
-  set_ui_player_stack
-  set_ui_input_queue
-
-
-*/
 
 void load_ui_lib(const char *path) {
   lib = dlopen(path, RTLD_NOW);
@@ -39,7 +22,7 @@ void load_ui_func() {
 
   uint32_t no_good = 0;
 #define LOAD_FUNC(name)                                                        \
-  name = (typeof(name))dlsym(lib, #name);                                      \
+  name = /*(typeof(name))*/ dlsym(lib, #name);                                 \
   if (!name) {                                                                 \
     no_good++;                                                                 \
     fputs(dlerror(), stderr);                                                  \
@@ -56,7 +39,6 @@ void load_ui_func() {
   LOAD_FUNC(delwin_ui);
   LOAD_FUNC(resizewin_ui);
   LOAD_FUNC(addsubwin_ui);
-  LOAD_FUNC(movesubwin_ui);
   LOAD_FUNC(rmsubwin_ui);
   LOAD_FUNC(getwinyx_ui);
   LOAD_FUNC(getwinhw_ui);

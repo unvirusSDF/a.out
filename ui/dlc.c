@@ -1,20 +1,86 @@
 #include "./decl.h"
 
+extern void refresh_ui(void);
+
+static inline void ui_input_clbk(uint8_t key) {
+  int max_y, max_x;
+  getmaxyx(stdscr, max_y, max_x);
+  if (!current)
+    return;
+  switch (key) {
+  case UI_KBI_MVWIN_UP:
+    current->y = MAX((int)current->y - 1, 0);
+    break;
+  case UI_KBI_MVWIN_DOWN:
+    current->y = MIN((int)current->y + 1, max_y - 1);
+    break;
+  case UI_KBI_MVWIN_LEFT:
+    current->x = MAX((int)current->x - 1, 0);
+    break;
+  case UI_KBI_MVWIN_RIGHT:
+    current->x = MIN((int)current->x + 1, max_x - 1);
+    break;
+
+  case UI_KBI_SELWIN_NEXT: {
+    uint32_t i;
+    if (current->parent) {
+      /* search for the window to find the next one */
+      for (i = 0; i < current->parent->subw.cap; i++)
+        if (current->parent->subw.wins[i] == current)
+          break;
+      for (uint32_t j = i + 1; j != i;
+           j = (j >= current->parent->subw.cap) ? 0 : j + 1)
+        if (current->parent->subw.wins[j])
+          set_current(current->parent->subw.wins[j]);
+      break;
+    }
+    /* current is orphan */
+    i = current - window_pool.wins; // index in the window allocator
+    for (uint32_t j = i + 1; j != i;
+         j = (j >= sizeof window_pool.wins / sizeof *window_pool.wins) ? 0
+                                                                       : i + 1)
+      if (window_pool.wins[j].attr & WINDOW_ATTR_MAIN)
+        set_current(window_pool.wins + j);
+  } break;
+
+  /* same thing but decreasing instead of increasing the itterators */
+  /* brocken so not implemented */
+  case UI_KBI_SELWIN_PREV: {
+  } break;
+
+  case UI_KBI_SELCONT_UP: {
+
+  } break;
+  case UI_KBI_SELCONT_ACTIVE: {
+
+  } break;
+
+  default:
+    return;
+  }
+  refresh_ui();
+}
+
 void *input_listener(void *) {
   halfdelay(2);
   int c;
   while (listening_inputs) {
-    if ((c = getch()) != ERR)
-      if (keybinds[c]) {
-        if (current) {
-          if (current->pfn_input_callback) {
-            // compilers hate this one simple trick :
-            // (this made the compiler shut up about dicarded type qualifier)
-            uintptr_t data = (uintptr_t)current->data.data;
-            current->pfn_input_callback(current, keybinds[c], (void *)data);
-          }
+    if ((c = getch()) == ERR)
+      continue;
+
+    uint8_t key = keybinds[c];
+    if (key > 127) { // ui keys
+      ui_input_clbk(key);
+    } else {
+      if (current) {
+        if (current->pfn_input_callback) {
+          // compilers hate this one simple trick :
+          // (this made the compiler shut up about dicarded type qualifier)
+          uintptr_t data = (uintptr_t)current->data;
+          current->pfn_input_callback(current, keybinds[c], (void *)data);
         }
       }
+    }
   }
   return NULL;
 }
@@ -22,7 +88,7 @@ void *input_listener(void *) {
 #define COLOR_X_LIST()                                                         \
   X(BLACK) X(RED) X(GREEN) X(YELLOW) X(BLUE) X(MAGENTA) X(CYAN) X(WHITE)
 #define X(color) #color,
-static const char *colors_names[8] = {COLOR_X_LIST()};
+// static const char *colors_names[8] = {COLOR_X_LIST()};
 #undef X
 
 // init the colors with dark magic
@@ -72,9 +138,10 @@ void display_window(window_t const *const win) {
   case WINDOW_TYPE_NONE: {
     off_y += win->y;
     off_x += win->x;
-    for (uint32_t i = 0; i < win->data.subw.cap; i++) {
-      if (win->data.subw.wins[i]) {
-        display_window(win->data.subw.wins[i]);
+    // todo bold if current window
+    for (uint32_t i = 0; i < win->subw.cap; i++) {
+      if (win->subw.wins[i]) {
+        display_window(win->subw.wins[i]);
       }
     }
     off_y -= win->y;
@@ -89,7 +156,7 @@ void display_window(window_t const *const win) {
     box(nc_win, 0, 0);
     if (win == current)
       wattroff(nc_win, A_BOLD);
-    map_t volatile const *const map = win->data.data;
+    map_t volatile const *const map = win->data;
     for (uint32_t i = 0; i < map->height; i++) {
       for (uint32_t j = 0; j < map->width; j++) {
         wattrset(nc_win, map_texture_to_terrain(&map->terrain[i][j]));
@@ -117,7 +184,7 @@ void display_window(window_t const *const win) {
         uint32_t selector, choices_n;
         char const *const *choices;
         // void(*_)(void); //may be omited
-      } const *data = win->data.data;
+      } const *data = win->data;
       choices = data->choices;
       choices_n = data->choices_n;
       selector = data->selector + 1;
@@ -144,7 +211,7 @@ void display_window(window_t const *const win) {
     box(nc_win, 0, 0);
     if (win == current)
       wattroff(nc_win, A_BOLD);
-    char const *volatile const *raw_data = win->data.data;
+    char const *volatile const *raw_data = win->data;
     for (uint32_t i = 1; *raw_data; i++, raw_data++) {
       mvwaddstr(nc_win, i, 1, *raw_data);
     }
@@ -157,4 +224,13 @@ void display_window(window_t const *const win) {
     LOG("unknown window type");
     break;
   }
+}
+
+window_t *set_current(window_t *new) {
+  if (current) {
+    current->attr &= ~WINDOW_ATTR_CURRENT;
+  }
+  new->attr |= WINDOW_ATTR_CURRENT;
+  current = new;
+  return new;
 }

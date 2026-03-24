@@ -24,17 +24,6 @@ uint8_t run_frame(void);
 #define INIT(a) = a
 #endif
 
-// made to be passed as buffer wich reinterpret them as
-// struct{
-//   uint16_t selector, choices_n;
-//   const char*const* choices
-// }
-struct menu_t {
-  uint32_t selector, choices_n;
-  char const *const *choices;
-  void (**choices_ppfn)(void);
-} typedef menu_t;
-
 // variables
 QUAL volatile input_queue_t input_queue INIT({});
 QUAL entity_t entities[16] INIT({});

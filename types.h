@@ -9,10 +9,21 @@ struct {
 } typedef terrain_t;
 
 struct {
-  terrain_t **terrain;
   uint16_t height;
   uint16_t width;
+  terrain_t **terrain;
 } typedef map_t;
+
+// made to be passed as buffer wich reinterpret them as
+// struct{
+//   uint16_t selector, choices_n;
+//   const char*const* choices
+// }
+struct menu_t {
+  uint32_t selector, choices_n;
+  char const *const *choices;
+  void (**choices_ppfn)(void);
+} typedef menu_t;
 
 struct {
   uint16_t hp;

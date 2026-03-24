@@ -16,6 +16,7 @@ enum window_attr_t : uint8_t {
   // subwindow must not be main, else they will be displayed twice
   WINDOW_ATTR_MAIN = 0x01,
   WINDOW_ATTR_FULLSCREEN = 0x02,
+  WINDOW_ATTR_CURRENT = 0x04,
 } typedef window_attr_t;
 
 struct window_t {
@@ -29,13 +30,14 @@ struct window_t {
       uint16_t count, cap;
       struct window_t **wins;
     } subw;
-  } data;
+  };
   window_input_callback_pfn pfn_input_callback;
 } typedef window_t;
 
 void init_color_map(void);
 void display_window(window_t const *const);
 void *input_listener(void *);
+window_t *set_current(window_t *);
 
 /*
  * QUAL is extern when this is used as a header, and nothing when this is
@@ -71,5 +73,25 @@ QUAL struct window_pool_t {
 #undef QUAL
 #undef INIT
 
+enum ui_kbd_e : uint8_t {
+  UI_KBI_NONE = 128,
+
+  UI_KBI_MVWIN_UP,
+  UI_KBI_MVWIN_DOWN,
+  UI_KBI_MVWIN_LEFT,
+  UI_KBI_MVWIN_RIGHT,
+
+  UI_KBI_SELWIN_NEXT,
+  UI_KBI_SELWIN_PREV,
+
+  UI_KBI_SELCONT_UP,
+  UI_KBI_SELCONT_ACTIVE,
+} typedef ui_kbd_e;
+
 #define LOG(FMT, ...)                                                          \
   fprintf(stderr, "%4lu (ui) : " FMT "\n", frame_count, ##__VA_ARGS__)
+#define MIN(a, b) ((a < b) ? (a) : (b))
+#define MAX(a, b) ((a > b) ? (a) : (b))
+#define CLAMP(x, a, b) ((x > b) ? b : (x < a) ? a : x) // aka MIN(b, MAX(x,a))
+
+#define CTRL(x) (x) & 0X1F

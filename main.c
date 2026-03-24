@@ -3,8 +3,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#define CORE
-
 #include "./header.h"
 #include "./types.h"
 #include "core/callback.h"
@@ -55,15 +53,15 @@ int main() {
   // bdbfwin_ui(map_win, &map);
 
   char const *buf[] = {
-      "do nothing",
-      "exit",
+      "do nothing", "exit", "", "", "", "padded",
   };
 
   menu_t menu = {
       .selector = 0,
-      .choices_n = 2,
+      .choices_n = 6,
       .choices = (const char **)buf,
-      .choices_ppfn = (void (*[])(void)){NULL, quit_wrap},
+      .choices_ppfn =
+          (void (*[])(void)){NULL, quit_wrap, NULL, NULL, NULL, NULL},
   };
   WINDOW *menu_win = newwin_ui(&(window_create_info_t){
       .height = 40,

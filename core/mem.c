@@ -1,0 +1,40 @@
+#include "mem.h"
+#include <assert.h>
+#include <stdlib.h>
+
+#define ptr_dbg(X) _Generic((X), void *: (long)X, default: 1)
+
+void *load_menu_from_mem(menu_t *out, FILE *f) {
+  assert(out && f);
+  uint32_t choices_n, selector;
+  fread(&choices_n, 1, sizeof(choices_n), f);
+  fread(&selector, 1, sizeof(selector), f);
+  // reserve space for the choices names
+  char **choices = malloc(choices_n * sizeof(*choices));
+}
+
+void *load_map_from_mem(map_t *out, FILE *f) {
+  uint16_t h, w;
+  fread(&h, 1, sizeof(h), f);
+  fread(&w, 1, sizeof(h), f);
+
+  out->height = h;
+  out->width = w;
+
+  out->terrain = malloc(h * sizeof(*out->terrain));
+  terrain_t *buffer = malloc(h * w * sizeof(*buffer));
+  fread(buffer, h * w, sizeof(*buffer), f);
+  for (uint16_t i = 0; i < h; i++) {
+    out->terrain[i] = buffer + i;
+  }
+  return out;
+}
+
+void *save_map_to_mem(map_t const *data, FILE *f) {
+  fwrite(data, 2, sizeof(uint16_t), f);
+  for (uint16_t i = 0; i < data->height; i++) {
+    fwrite(data->terrain[i], data->width, sizeof(**data->terrain), f);
+  }
+
+  return (void *)(uintptr_t)data;
+}

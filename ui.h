@@ -40,9 +40,6 @@ QUAL void fn(resizewin_ui)(WINDOW *win, uint32_t new_height,
 QUAL void fn(addsubwin_ui)(WINDOW *root, WINDOW *subwin, uint32_t y,
                            uint32_t x);
 
-QUAL void fn(movesubwin_ui)(WINDOW *root, WINDOW *subwin, uint32_t new_y,
-                            uint32_t new_x);
-
 QUAL void fn(rmsubwin_ui)(WINDOW *root, WINDOW *subwin);
 
 QUAL void fn(getwinyx_ui)(const WINDOW *win, uint32_t *y, uint32_t *x);

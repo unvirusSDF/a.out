@@ -13,6 +13,17 @@ void init_keys(void) {
   keybinds[KEY_RIGHT] = keybinds['d'] = CORE_RIGHT;
   keybinds['x'] = CORE_EXIT;
   keybinds['\n'] = CORE_SELECT;
+
+  keybinds['k'] = UI_KBI_MVWIN_UP;
+  keybinds['j'] = UI_KBI_MVWIN_DOWN;
+  keybinds['h'] = UI_KBI_MVWIN_LEFT;
+  keybinds['l'] = UI_KBI_MVWIN_RIGHT;
+
+  keybinds[CTRL('l')] = UI_KBI_SELWIN_NEXT;
+  keybinds[CTRL('h')] = UI_KBI_SELWIN_PREV;
+
+  keybinds[CTRL('e')] = UI_KBI_SELCONT_UP;
+  keybinds[CTRL('a')] = UI_KBI_SELCONT_ACTIVE;
 }
 
 void init_ncurses(void) {
@@ -23,7 +34,7 @@ void init_ncurses(void) {
   noecho();
 
   if (start_color() != OK) {
-    fputs("stupid, I cannot use colors...\n", stderr);
+    LOG("stupid, I cannot use colors...");
   } else {
     init_color_map();
   };
@@ -38,8 +49,8 @@ pthread_t input_listener_pthread;
 void init_ui(void) {
   init_keys();
   init_ncurses();
-  int h, w;
-  getmaxyx(stdscr, h, w);
+  // int h, w;
+  // getmaxyx(stdscr, h, w);
 
   listening_inputs = 1;
   pthread_create(&input_listener_pthread, NULL, input_listener, NULL);
@@ -49,7 +60,6 @@ void close_ui(void) {
   mvprintw(0, 0, "start to close\n");
   if (listening_inputs)
     listening_inputs = 0;
-  mvprintw(1, 0, "listening_inputs: %hhu\n", listening_inputs);
   pthread_join(input_listener_pthread, NULL);
   mvprintw(2, 0, "input_listener joined\n");
   endwin();
@@ -77,8 +87,8 @@ window_t *newwin_ui(window_create_info_t const *const ci) {
     }
 
   window_pool.is_space_free |= 1 << i;
-  uint32_t h, w;
-  getmaxyx(stdscr, h, w);
+  // uint32_t h, w;
+  // getmaxyx(stdscr, h, w);
 
   uint8_t fullscreen = ci->height && ci->width;
   window_pool.wins[i] = (window_t){
@@ -90,11 +100,11 @@ window_t *newwin_ui(window_create_info_t const *const ci) {
   };
 
   if (ci->type) {
-    window_pool.wins[i].data.data = ci->pbuffer;
+    window_pool.wins[i].data = ci->pbuffer;
   }
 
   if (!current) {
-    current = window_pool.wins + i;
+    set_current(window_pool.wins + i);
   }
   return window_pool.wins + i;
 }
@@ -104,8 +114,8 @@ void delwin_ui(window_t *win) {
     current = NULL;
   if (win->parent)
     rmsubwin_ui(win->parent, win);
-  if (win->type == WINDOW_TYPE_NONE && win->data.subw.wins) {
-    free(win->data.subw.wins);
+  if (win->type == WINDOW_TYPE_NONE && win->subw.wins) {
+    free(win->subw.wins);
   }
   uint8_t handle = win - window_pool.wins;
   window_pool.wins[handle] = (window_t){};
@@ -126,43 +136,38 @@ void addsubwin_ui(window_t *root, window_t *subwin, uint32_t y, uint32_t x) {
   subwin->attr &= ~WINDOW_ATTR_MAIN;
   subwin->parent = root;
   subwin->y = y, subwin->x = x;
-  if (!root->data.subw.wins) {
-    root->data.subw.wins =
-        calloc(root->data.subw.cap = 10, sizeof(*root->data.subw.wins));
-    root->data.subw.wins[0] = subwin;
-    root->data.subw.count = 1;
+  if (!root->subw.wins) {
+    root->subw.wins = calloc(root->subw.cap = 10, sizeof(*root->subw.wins));
+    root->subw.wins[0] = subwin;
+    root->subw.count = 1;
     return;
   }
-  if (root->data.subw.count >= root->data.subw.cap) {
-    root->data.subw.wins =
-        realloc(root->data.subw.wins,
-                (root->data.subw.cap *= 2) * sizeof(*root->data.subw.wins));
-    for (uint32_t i = root->data.subw.cap / 2; i < root->data.subw.cap; i++)
-      root->data.subw.wins[i] = NULL;
+  if (root->subw.count >= root->subw.cap) {
+    root->subw.wins = realloc(root->subw.wins,
+                              (root->subw.cap *= 2) * sizeof(*root->subw.wins));
+    for (uint32_t i = root->subw.cap / 2; i < root->subw.cap; i++)
+      root->subw.wins[i] = NULL;
 
-    root->data.subw.wins[root->data.subw.count++] = subwin;
+    root->subw.wins[root->subw.count++] = subwin;
     return;
   }
-  for (uint32_t i = 0; i <= root->data.subw.count; i++) {
-    if (!root->data.subw.wins[i]) {
-      root->data.subw.wins[i] = subwin;
-      root->data.subw.count++;
+  for (uint32_t i = 0; i <= root->subw.cap; i++) {
+    if (!root->subw.wins[i]) {
+      root->subw.wins[i] = subwin;
+      root->subw.count++;
       return;
     }
   }
   LOG("failed to attach subwindow %p on root %p", subwin, root);
 }
 
-void movesubwin_ui(window_t *root, window_t *subwin, uint32_t new_y,
-                   uint32_t new_x) {}
-
 void rmsubwin_ui(window_t *root, window_t *subwin) {
   // subwin->attr |= WINDOW_ATTR_MAIN; // not a subwindow anymore but can be
   // drawn
-  for (uint32_t i = 0; i < root->data.subw.cap; i++)
-    if (root->data.subw.wins[i] == subwin) {
-      root->data.subw.wins[i] = NULL;
-      root->data.subw.count--;
+  for (uint32_t i = 0; i < root->subw.cap; i++)
+    if (root->subw.wins[i] == subwin) {
+      root->subw.wins[i] = NULL;
+      root->subw.count--;
     }
 }
 
@@ -183,8 +188,8 @@ void *bdbfwin_ui(window_t *win, void *data) {
         data, win);
     return NULL;
   }
-  uintptr_t tmp = (uintptr_t)win->data.data;
-  win->data.data = data;
+  uintptr_t tmp = (uintptr_t)win->data;
+  win->data = data;
   return (void *)tmp;
 }
 
