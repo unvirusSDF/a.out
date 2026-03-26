@@ -1,0 +1,4 @@
+every ui functions loaded well, no error found
+devel test, TUI build on ncurses
+quited after 1263ms, at frame 2
+arverage spf : 0.63

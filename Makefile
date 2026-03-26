@@ -12,11 +12,12 @@ all: a.out ui.so
 clean:
 	rm *.o core/*.o ui/*.o
 
+# same as 'make -B'
 force_build: clean all
 
 ################# CORE ###################
 
-CORE_OBJS:= main.o loader.o core/core.o core/callback.o core/mem.o ui.o header.o
+CORE_OBJS:= main.o loader.o core/core.o core/callback.o ui.o header.o
 CORE_FLAGS := -DCORE
 CORE_LIB :=
 CORE_HEADERS := ui.h header.h
@@ -36,9 +37,6 @@ core/core.o: core/core.c header.h types.h
 
 core/callback.o: core/callback.c core/callback.h types.h header.h
 	$(CC) $(CFLAGS) $(CORE_FLAGS) -c core/callback.c -o $@
-
-core/mem.o: core/mem.c
-	$(CC) $(CFLAGS) $(CORE_FLAGS) -c core/mem.c -o $@
 
 ui.o: ui.h types.h
 	$(CC) $(CFLAGS) $(CORE_FLAGS) -x c -c -DIMPL -DCORE ui.h -o $@
