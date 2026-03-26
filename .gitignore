@@ -1,4 +1,6 @@
 *.o
+core/*.o
+ui/*.o
 *.sh
 *.out
 *.so
