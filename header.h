@@ -6,12 +6,10 @@
 
 // functions
 
-uint8_t *next_input(uint8_t *); // return a array of inputs, the pointer value
-                                // is set to the size of the array
-
 uint8_t quit(void);
 uint8_t must_quit(void);
 
+// return the amount of thing that happened, if nothing return false (==0)
 uint8_t run_frame(void);
 
 // if IMPL defined, define all variables with default init in INIT( . ) if
@@ -25,18 +23,15 @@ uint8_t run_frame(void);
 #endif
 
 // variables
-QUAL volatile input_queue_t input_queue INIT({});
-QUAL entity_t entities[16] INIT({});
 QUAL uint64_t millis_since_launch INIT({});
 QUAL uint64_t frame INIT({});
-QUAL map_t map;
 
-// TODO: must be atomic but I'm to lazy now
-QUAL volatile uint8_t something_happend_counter INIT({});
+QUAL volatile _Atomic uint8_t something_happend_counter INIT(0);
 
 #undef QUAL
 #undef INIT
 
+// utils macros
 #define MIN(a, b) ((a < b) ? (a) : (b))
 #define MAX(a, b) ((a > b) ? (a) : (b))
 #define CLAMP(x, a, b) ((x > b) ? b : (x < a) ? a : x) // aka MIN(b, MAX(x,a))
@@ -53,11 +48,14 @@ QUAL volatile uint8_t something_happend_counter INIT({});
     a = b;                                                                     \
   }
 
+// for LOG to be defined, stdio.h must be imported before
 #ifdef _STDIO_H
 #define LOG(FMT, ...)                                                          \
   fprintf(stderr, "%4lu (core): " FMT "\n", frame, ##__VA_ARGS__)
 #endif
 
+// aditional debug code if DEBUG_ is defined else code is ignored (a.k.a. wiped
+// out by the preprocessor)
 #ifdef DEBUG_
 #define DEBUG(code) code
 #else

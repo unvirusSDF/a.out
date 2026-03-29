@@ -27,7 +27,7 @@ a.out: $(CORE_OBJS)
 	$(CC) $(CFLAGS) -o a.out $^
 
 main.o: main.c ui.h header.h core/callback.h types.h
-	$(CC) $(CFLAGS) $(CORE_FLAGS) -c main.c
+	$(CC) $(CFLAGS) $(CORE_FLAGS) -c main.c -o $@
 
 loader.o: loader.c ui.h
 	$(CC) $(CFLAGS) $(CORE_FLAGS) -Wno-pedantic -c loader.c

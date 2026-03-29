@@ -39,36 +39,36 @@ int main() {
       .terrain = malloc(40 * sizeof(*map.terrain)),
       .width = 40,
       .height = 40,
+      .pentities =
+          &(entity_t){.traits = ENT_TRAIT_playable | ENT_TRAIT_visible},
+      .entities_n = 1,
   };
   terrain_t *map_buffer = malloc(map.width * map.height * sizeof(*map_buffer));
 
   for (uint32_t i = 0; i < map.height; i++) {
     map.terrain[i] = map_buffer + i * map.width;
     for (uint32_t j = 0; j < map.width; j++) {
-      map.terrain[i][j] = (terrain_t){
-          .floor = 3, .roof = 0, .obstacle = ' ', .temperature = 20};
+      map.terrain[i][j] = (terrain_t){.floor = 1,
+                                      .roof = 0,
+                                      .obstacle = ' ',
+                                      .traits = TERRAIN_TRAIT_crossable};
     }
   }
-  // WINDOW *map_win = newwin_ui(map.height, map.width, WINDOW_TYPE_MAP);
-  // bdbfwin_ui(map_win, &map);
+  char info[41][41] ={};
 
-  char const *buf[] = {
-      "do nothing", "exit", "", "", "", "padded",
-  };
-
-  menu_t menu = {
-      .selector = 0,
-      .choices_n = 6,
-      .choices = (const char **)buf,
-      .choices_ppfn =
-          (void (*[])(void)){NULL, quit_wrap, NULL, NULL, NULL, NULL},
-  };
-  WINDOW *menu_win = newwin_ui(&(window_create_info_t){
+  WINDOW *map_win = newwin_ui(&(window_create_info_t){
       .height = 40,
       .width = 40,
-      .type = WINDOW_TYPE_MENU,
-      .pbuffer = &menu,
-      .pfn_input_callback = dflt_menu_input_clbk,
+      .type = WINDOW_TYPE_MAP,
+      .pbuffer = &map,
+      .pfn_input_callback = dflt_map_input_clbk,
+  });
+
+  WINDOW *infos_win = newwin_ui(&(window_create_info_t){
+      .height = 40,
+      .width = 40,
+      .type = WINDOW_TYPE_RAW,
+      .pbuffer = info,
   });
 
   WINDOW *container = newwin_ui(&(window_create_info_t){
@@ -76,7 +76,8 @@ int main() {
       .width = 0,
       .type = WINDOW_TYPE_NONE,
   });
-  addsubwin_ui(container, menu_win, 0, 0);
+  addsubwin_ui(container, map_win, 0, 0);
+  addsubwin_ui(container, infos_win, 0, 40);
 
   refresh_ui();
 
@@ -85,6 +86,7 @@ int main() {
     millis_since_launch = get_time_millis() - millis_at_launch;
     delta = millis_since_launch - delta;
     if (run_frame()) {
+      snprintf(info[1], sizeof *info/ sizeof **info -1, "frame %lu", frame);
       refresh_ui();
       frame++;
     }
@@ -94,7 +96,7 @@ int main() {
   }
 
   delwin_ui(container);
-  delwin_ui(menu_win);
+  delwin_ui(map_win);
 
   fprintf(stderr, "quited after %lums, at frame %lu\narverage spf : %3.2f\n",
           millis_since_launch, frame,

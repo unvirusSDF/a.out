@@ -77,10 +77,6 @@ explicitly ask a new size for the window (may be ignored)
 void addsubwin_ui(WINDOW \*root, WINDOW \*subwin, uint32_t y, uint32_t x)
 set a window as subwindow of another one
 
-### movesubwin_ui
-void movesubwin_ui(WINDOW \*root, WINDOW \*subwin, uint32_t new_y, uint32_t new_x)
-explicitly asks for a window move (may be ignored)
-
 ### rmsubwin_ui
 void rmsubwin_ui(WINDOW \*root, WINDOW \*subwin)
 unbinds subwindow from root window

@@ -20,7 +20,7 @@ enum window_attr_t : uint8_t {
 } typedef window_attr_t;
 
 struct window_t {
-  window_type_e type;
+  enum window_type type;
   window_attr_t attr;
   uint32_t y, x, h, w;
   struct window_t *parent;
@@ -86,6 +86,8 @@ enum ui_kbd_e : uint8_t {
 
   UI_KBI_SELCONT_UP,
   UI_KBI_SELCONT_ACTIVE,
+
+  UI_KBI_FORCE_REDRAW,
 } typedef ui_kbd_e;
 
 #define LOG(FMT, ...)                                                          \

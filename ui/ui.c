@@ -7,10 +7,16 @@
 #include "./decl.h"
 
 void init_keys(void) {
-  keybinds[KEY_DOWN] = keybinds['s'] = CORE_DOWN;
-  keybinds[KEY_UP] = keybinds['z'] = CORE_UP;
-  keybinds[KEY_LEFT] = keybinds['q'] = CORE_LEFT;
-  keybinds[KEY_RIGHT] = keybinds['d'] = CORE_RIGHT;
+  keybinds[KEY_DOWN] = CORE_CURSOR_DOWN;
+  keybinds[KEY_UP] = CORE_CURSOR_UP;
+  keybinds[KEY_LEFT] = CORE_CURSOR_LEFT;
+  keybinds[KEY_RIGHT] = CORE_CURSOR_RIGHT;
+
+  keybinds['s'] = CORE_DOWN;
+  keybinds['z'] = CORE_UP;
+  keybinds['q'] = CORE_LEFT;
+  keybinds['d'] = CORE_RIGHT;
+
   keybinds['x'] = CORE_EXIT;
   keybinds['\n'] = CORE_SELECT;
 
@@ -24,6 +30,7 @@ void init_keys(void) {
 
   keybinds[CTRL('e')] = UI_KBI_SELCONT_UP;
   keybinds[CTRL('a')] = UI_KBI_SELCONT_ACTIVE;
+  keybinds[CTRL('c')] = UI_KBI_FORCE_REDRAW;
 }
 
 void init_ncurses(void) {

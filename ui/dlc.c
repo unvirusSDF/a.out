@@ -54,6 +54,9 @@ static inline void ui_input_clbk(uint8_t key) {
   case UI_KBI_SELCONT_ACTIVE: {
 
   } break;
+  case UI_KBI_FORCE_REDRAW: {
+    refresh_ui();
+  } break;
 
   default:
     return;
@@ -163,6 +166,11 @@ void display_window(window_t const *const win) {
         mvwaddch(nc_win, i + 1, j + 1, map->terrain[i][j].obstacle);
       }
     }
+    for (uint16_t i = 0; i < map->entities_n; i++) {
+      mvwaddch(nc_win, map->pentities[i].y + 1, map->pentities[i].x + 1, '@');
+    }
+    if (win == current)
+      move(map->cursor_y + 1 + win->y, map->cursor_x + 1 + win->x);
     wrefresh(nc_win);
     delwin(nc_win);
   } break;
@@ -212,9 +220,10 @@ void display_window(window_t const *const win) {
     if (win == current)
       wattroff(nc_win, A_BOLD);
     char const *volatile const *raw_data = win->data;
-    for (uint32_t i = 1; *raw_data; i++, raw_data++) {
-      mvwaddstr(nc_win, i, 1, *raw_data);
-    }
+    if (raw_data)
+      for (uint32_t i = 1; *raw_data && i<win->h; i++, raw_data++) {
+        mvwaddstr(nc_win, i, 1, *raw_data);
+      }
 
     wrefresh(nc_win);
     delwin(nc_win);
@@ -224,6 +233,7 @@ void display_window(window_t const *const win) {
     LOG("unknown window type");
     break;
   }
+  refresh();
 }
 
 window_t *set_current(window_t *new) {
