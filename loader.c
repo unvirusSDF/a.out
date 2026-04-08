@@ -44,6 +44,7 @@ void load_ui_func() {
   LOAD_FUNC(getwinhw_ui);
   LOAD_FUNC(bdbfwin_ui);
   LOAD_FUNC(bdwininpclbk_ui);
+  LOAD_FUNC(makecurrent_ui);
 
 #undef LOAD_FUNC
 

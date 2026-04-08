@@ -8,6 +8,10 @@
 #include "core/callback.h"
 #include "ui.h"
 
+#ifndef stderr
+#error "stupid"
+#endif
+
 void load_ui_lib(const char *path);
 void load_ui_func();
 void unload_ui();
@@ -23,10 +27,28 @@ uint64_t get_time_millis() {
 
 void quit_wrap(void) { quit(); }
 
+void exit_clbk(void) { fclose(stderr); }
+
+void game_credits(void) {
+  static const char *credit[] = {
+      "this was dreamed by the utterly deranged",
+  };
+
+  // not handled because this will be automaticly destroyed
+  makecurrent_ui(newwin_ui(&(window_create_info_t){
+      .height = sizeof(credit),
+      .width = 80,
+      .type = WINDOW_TYPE_RAW,
+      .pbuffer = credit,
+      .pfn_input_callback = dflt_txt_input_clbk,
+  }));
+}
+
 int main() {
   uint64_t millis_at_launch = get_time_millis();
   freopen("./log", "w+", stderr);
   setvbuf(stderr, NULL, _IONBF, 0);
+  atexit(exit_clbk);
 
   load_ui_lib("./ui.so");
   load_ui_func();
@@ -35,76 +57,47 @@ int main() {
 
   init_ui();
 
-  map_t map = {
-      .terrain = malloc(40 * sizeof(*map.terrain)),
-      .width = 40,
-      .height = 40,
-      .pentities =
-          &(entity_t){.traits = ENT_TRAIT_playable | ENT_TRAIT_visible},
-      .entities_n = 1,
+  menu_t entry_menu_buf = {
+      .selector = 0,
+      .choices_n = 4,
+      .choices =
+          (const char *[4]){
+              "play",
+              "credit",
+              "options",
+              "exit",
+          },
+      .choices_ppfn = (void (*[4])(void)){0, game_credits, 0, quit_wrap},
   };
-  terrain_t *map_buffer = malloc(map.width * map.height * sizeof(*map_buffer));
 
-  for (uint32_t i = 0; i < map.height; i++) {
-    map.terrain[i] = map_buffer + i * map.width;
-    for (uint32_t j = 0; j < map.width; j++) {
-      map.terrain[i][j] = (terrain_t){.floor = 1,
-                                      .roof = 0,
-                                      .obstacle = ' ',
-                                      .traits = TERRAIN_TRAIT_crossable};
-    }
-  }
-  char info[41][41] ={};
-
-  WINDOW *map_win = newwin_ui(&(window_create_info_t){
-      .height = 40,
-      .width = 40,
-      .type = WINDOW_TYPE_MAP,
-      .pbuffer = &map,
-      .pfn_input_callback = dflt_map_input_clbk,
+  // implicitly deleted at the end of the code
+  newwin_ui(&(window_create_info_t){
+      .height = 4,
+      .width = 10,
+      .type = WINDOW_TYPE_MENU,
+      .pbuffer = &entry_menu_buf,
+      .pfn_input_callback = dflt_menu_input_clbk,
   });
 
-  WINDOW *infos_win = newwin_ui(&(window_create_info_t){
-      .height = 40,
-      .width = 40,
-      .type = WINDOW_TYPE_RAW,
-      .pbuffer = info,
-  });
-
-  WINDOW *container = newwin_ui(&(window_create_info_t){
-      .height = 0,
-      .width = 0,
-      .type = WINDOW_TYPE_NONE,
-  });
-  addsubwin_ui(container, map_win, 0, 0);
-  addsubwin_ui(container, infos_win, 0, 40);
-
-  refresh_ui();
-
-  for (;;) {
+  for (refresh_ui();;) {
     uint64_t delta = millis_since_launch;
     millis_since_launch = get_time_millis() - millis_at_launch;
     delta = millis_since_launch - delta;
     if (run_frame()) {
-      snprintf(info[1], sizeof *info/ sizeof **info -1, "frame %lu", frame);
-      refresh_ui();
+      LOG("refreshing for a new frame");
       frame++;
+      refresh_ui();
     }
 
     if (must_quit())
       break;
   }
 
-  delwin_ui(container);
-  delwin_ui(map_win);
-
-  fprintf(stderr, "quited after %lums, at frame %lu\narverage spf : %3.2f\n",
-          millis_since_launch, frame,
+  fprintf(stderr, "quited after %.3fs, at frame %lu\narverage spf : %3.2f\n",
+          millis_since_launch / 1000., frame,
           (float)millis_since_launch / (1000. * (float)frame));
 
   close_ui();
-  free(map.terrain);
-  free(map_buffer);
 
   unload_ui();
 

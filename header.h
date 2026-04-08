@@ -25,6 +25,7 @@ uint8_t run_frame(void);
 // variables
 QUAL uint64_t millis_since_launch INIT({});
 QUAL uint64_t frame INIT({});
+QUAL uint64_t time INIT(0);
 
 QUAL volatile _Atomic uint8_t something_happend_counter INIT(0);
 
@@ -51,7 +52,14 @@ QUAL volatile _Atomic uint8_t something_happend_counter INIT(0);
 // for LOG to be defined, stdio.h must be imported before
 #ifdef _STDIO_H
 #define LOG(FMT, ...)                                                          \
-  fprintf(stderr, "%4lu (core): " FMT "\n", frame, ##__VA_ARGS__)
+  fprintf(stderr,                                                              \
+          "%4lu (core) "__FILE_NAME__                                          \
+          ":%u : " FMT "\n",                                                   \
+          frame, __LINE__, ##__VA_ARGS__)
+#define SEGS()                                                                 \
+  LOG("here? ("__FILE_NAME__                                                   \
+      ": %i)",                                                                 \
+      __LINE__);
 #endif
 
 // aditional debug code if DEBUG_ is defined else code is ignored (a.k.a. wiped

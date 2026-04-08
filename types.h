@@ -18,8 +18,8 @@ enum entity_traits : uint16_t {
   ENT_TRAIT_moveable = 0x0001,
   ENT_TRAIT_targetable = 0x0002,
   ENT_TRAIT_crossable = 0x0004,
-  ENT_TRAIT_visible = 0x0004,
-  ENT_TRAIT_playable = 0x0100,
+  ENT_TRAIT_visible = 0x0008,
+  ENT_TRAIT_playable = 0x0010,
 };
 
 struct {
@@ -32,6 +32,7 @@ struct {
 } typedef entity_t;
 
 enum terrain_traits : uint8_t {
+  TERRAIN_TRAIT_none = 0x00,
   TERRAIN_TRAIT_crossable = 0x01,
 };
 
@@ -68,7 +69,7 @@ enum window_type : uint8_t {
 
 };
 
-struct WINDOW typedef WINDOW;
+uintptr_t typedef WINDOW;
 
 enum input_code_e : uint8_t {
 
@@ -89,8 +90,8 @@ enum input_code_e : uint8_t {
 
 };
 
-typedef void (*window_input_callback_pfn)(WINDOW *const,
-                                          enum input_code_e const, void *data);
+typedef void (*window_input_callback_pfn)(WINDOW const, enum input_code_e const,
+                                          void *data);
 
 struct window_create_info_t {
   uint32_t height, width;

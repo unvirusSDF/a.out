@@ -6,7 +6,15 @@
 
 #include <stdlib.h>
 
-void dflt_menu_input_clbk(WINDOW *const win, enum input_code_e const e,
+void dflt_txt_input_clbk(WINDOW const win, enum input_code_e const e, void *) {
+  if (e == CORE_EXIT) {
+    LOG("exiting");
+    delwin_ui(win);
+    something_happend_counter++;
+  }
+}
+
+void dflt_menu_input_clbk(WINDOW const win, enum input_code_e const e,
                           void *data) {
   menu_t *menu = data;
   switch (e) {
@@ -33,37 +41,49 @@ void dflt_menu_input_clbk(WINDOW *const win, enum input_code_e const e,
   something_happend_counter++;
 }
 
-void dflt_map_input_clbk(WINDOW *const win, enum input_code_e const e,
+void dflt_map_input_clbk(WINDOW const win, enum input_code_e const e,
                          void *data) {
   map_t map = *(map_t *)data;
 
   switch (e) {
   case CORE_UP:
-    if (map.pentities[0].traits & (ENT_TRAIT_playable | ENT_TRAIT_moveable)) {
+    if ((map.pentities[0].traits & (ENT_TRAIT_playable | ENT_TRAIT_moveable)) ==
+        (ENT_TRAIT_moveable | ENT_TRAIT_playable)) {
       if (map.terrain[map.pentities[0].y - 1][map.pentities[0].x].traits &
-          TERRAIN_TRAIT_crossable)
+          TERRAIN_TRAIT_crossable) {
         map.pentities[0].y--;
+        time += 500;
+      }
     }
     break;
   case CORE_DOWN:
-    if (map.pentities[0].traits & (ENT_TRAIT_playable | ENT_TRAIT_moveable)) {
+    if ((map.pentities[0].traits & (ENT_TRAIT_playable | ENT_TRAIT_moveable)) ==
+        (ENT_TRAIT_moveable | ENT_TRAIT_playable)) {
       if (map.terrain[map.pentities[0].y + 1][map.pentities[0].x].traits &
-          TERRAIN_TRAIT_crossable)
+          TERRAIN_TRAIT_crossable) {
         map.pentities[0].y++;
+        time += 500;
+      }
     }
     break;
   case CORE_LEFT:
-    if (map.pentities[0].traits & (ENT_TRAIT_playable | ENT_TRAIT_moveable)) {
+    if ((map.pentities[0].traits & (ENT_TRAIT_playable | ENT_TRAIT_moveable)) ==
+        (ENT_TRAIT_moveable | ENT_TRAIT_playable)) {
       if (map.terrain[map.pentities[0].y][map.pentities[0].x - 1].traits &
-          TERRAIN_TRAIT_crossable)
+          TERRAIN_TRAIT_crossable) {
         map.pentities[0].x--;
+        time += 500;
+      }
     }
     break;
   case CORE_RIGHT:
-    if (map.pentities[0].traits & (ENT_TRAIT_playable | ENT_TRAIT_moveable)) {
+    if ((map.pentities[0].traits & (ENT_TRAIT_playable | ENT_TRAIT_moveable)) ==
+        (ENT_TRAIT_moveable | ENT_TRAIT_playable)) {
       if (map.terrain[map.pentities[0].y][map.pentities[0].x + 1].traits &
-          TERRAIN_TRAIT_crossable)
+          TERRAIN_TRAIT_crossable) {
         map.pentities[0].x++;
+        time += 500;
+      }
     }
     break;
 

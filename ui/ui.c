@@ -3,6 +3,9 @@
 
 #include <pthread.h>
 
+#define __USE_GNU
+#include <dlfcn.h>
+
 #include "../ui.h"
 #include "./decl.h"
 
@@ -30,7 +33,7 @@ void init_keys(void) {
 
   keybinds[CTRL('e')] = UI_KBI_SELCONT_UP;
   keybinds[CTRL('a')] = UI_KBI_SELCONT_ACTIVE;
-  keybinds[CTRL('c')] = UI_KBI_FORCE_REDRAW;
+  keybinds[CTRL('c')] = CORE_EXIT;
 }
 
 void init_ncurses(void) {
@@ -61,6 +64,9 @@ void init_ui(void) {
 
   listening_inputs = 1;
   pthread_create(&input_listener_pthread, NULL, input_listener, NULL);
+
+  window_pool.wins = calloc((window_pool.cap = 20), sizeof *window_pool.wins);
+  current.current = malloc((current.cap = 20) * sizeof *current.current);
 }
 
 void close_ui(void) {
@@ -69,15 +75,38 @@ void close_ui(void) {
     listening_inputs = 0;
   pthread_join(input_listener_pthread, NULL);
   mvprintw(2, 0, "input_listener joined\n");
+  free(current.current);
+  free(window_pool.wins);
+  pthread_mutex_destroy(&window_pool.mutex);
   endwin();
 }
 
 void refresh_ui(void) {
-  for (uint8_t i = 0; i < 64; i++) {
+  LOG("window_pool : (%p, %hu/%hu)", window_pool.wins, window_pool.count,
+      window_pool.cap);
+  LOG("current window is %lx", get_current());
+  for (uint64_t i = 0; i < window_pool.count; i++) {
     window_t const *const win = &window_pool.wins[i];
-    if (window_pool.is_space_free << i && win->attr == WINDOW_ATTR_MAIN)
+    // LOG("win %hhu : %lx", i,window_pool.is_space_free& (1 << i) );
+    if ((win->attr & (WINDOW_ATTR_EXISTS | WINDOW_ATTR_MAIN)) ==
+        (WINDOW_ATTR_EXISTS | WINDOW_ATTR_MAIN)) {
+      LOG("display window %lu", i);
       display_window(win);
+    }
   }
+  int y, x;
+  getmaxyx(stdscr, y, x);
+  WINDOW *dbg = newwin(20, 20, y - 20, x - 20);
+  mvwprintw(dbg, 1, 1, "current win : %lx", get_current());
+  Dl_info info;
+  dladdr(WUNHANDLE(get_current())->pfn_input_callback, &info);
+  mvwprintw(dbg, 2, 1, "input_clbk :\n @%p\n @%s\n  %s",
+            WUNHANDLE(get_current())->pfn_input_callback, info.dli_fname,
+            info.dli_sname);
+  box(dbg, 0, 0);
+  mvwprintw(dbg, 0, 0, "debug win");
+  wrefresh(dbg);
+  delwin(dbg);
   frame_count++;
 }
 
@@ -85,22 +114,24 @@ void log_ui_info(void) {
   fprintf(stderr, "devel test, TUI build on ncurses\n");
 }
 
-window_t *newwin_ui(window_create_info_t const *const ci) {
-  uint8_t i = 0;
-  for (; window_pool.is_space_free & (1 << i); i++)
-    if (i >= 64) {
-      LOG("window count exeded max capacity (64)");
-      return NULL;
-    }
-
-  window_pool.is_space_free |= 1 << i;
-  // uint32_t h, w;
-  // getmaxyx(stdscr, h, w);
+window_handle_t newwin_ui(window_create_info_t const *const ci) {
+  pthread_mutex_lock(&window_pool.mutex);
+  if (window_pool.count >= window_pool.cap) {
+    LOG("error to much windows allocated, oveflowed maximum of %hu",
+        window_pool.cap);
+    pthread_mutex_unlock(&window_pool.mutex);
+    return 0;
+  }
+  window_pool.count++;
+  uint64_t i = 0;
+  for (; window_pool.wins[i].attr & WINDOW_ATTR_EXISTS; i++)
+    ;
 
   uint8_t fullscreen = ci->height && ci->width;
   window_pool.wins[i] = (window_t){
       .type = ci->type,
-      .attr = WINDOW_ATTR_MAIN | (fullscreen ? WINDOW_ATTR_FULLSCREEN : 0),
+      .attr = WINDOW_ATTR_EXISTS | WINDOW_ATTR_MAIN |
+              (fullscreen ? WINDOW_ATTR_FULLSCREEN : 0),
       .h = ci->height,
       .w = ci->width,
       .pfn_input_callback = ci->pfn_input_callback,
@@ -109,31 +140,46 @@ window_t *newwin_ui(window_create_info_t const *const ci) {
   if (ci->type) {
     window_pool.wins[i].data = ci->pbuffer;
   }
+  push_current((uintptr_t)i + 1);
 
-  if (!current) {
-    set_current(window_pool.wins + i);
-  }
-  return window_pool.wins + i;
+  pthread_mutex_unlock(&window_pool.mutex);
+  LOG("window_pool : (%p, %hu/%hu)", window_pool.wins, window_pool.count,
+      window_pool.cap);
+  return (i + 1);
 }
 
-void delwin_ui(window_t *win) {
-  if (win == current)
-    current = NULL;
+void delwin_ui(window_handle_t handle) {
+  pthread_mutex_lock(&window_pool.mutex);
+  window_t *win = WUNHANDLE(handle);
+  {
+    window_t *currw = WUNHANDLE(get_current());
+    if (currw && currw == win) {
+      // fail if the only child of the parent or if the only window
+      if (!next_current())
+        // pop back to the parent or do nothing and set current to 0x0
+        pop_current();
+    }
+  }
   if (win->parent)
-    rmsubwin_ui(win->parent, win);
+    rmsubwin_ui(win->parent, handle);
   if (win->type == WINDOW_TYPE_NONE && win->subw.wins) {
     free(win->subw.wins);
   }
-  uint8_t handle = win - window_pool.wins;
-  window_pool.wins[handle] = (window_t){};
-  window_pool.is_space_free |= 1 << handle;
+  window_pool.wins[(uintptr_t)handle - 1] = (window_t){};
+  pthread_mutex_unlock(&window_pool.mutex);
 }
-void resizewin_ui(window_t *win, uint32_t new_height, uint32_t new_width) {
+
+void resizewin_ui(window_handle_t handle, uint32_t new_height,
+                  uint32_t new_width) {
+  window_t *win = WUNHANDLE(handle);
   win->h = new_height;
   win->w = new_width;
 }
 
-void addsubwin_ui(window_t *root, window_t *subwin, uint32_t y, uint32_t x) {
+void addsubwin_ui(window_handle_t rooth, window_handle_t subwinh, uint32_t y,
+                  uint32_t x) {
+  window_t *root = window_pool.wins + (uintptr_t)rooth,
+           *subwin = window_pool.wins + (uintptr_t)subwinh - 1;
   if (root->type != WINDOW_TYPE_NONE) {
     LOG("tryied to add a subwindow to a non 'NONE' type windowed"
         " (type was %hhu) , aborting current subwindowin procedure",
@@ -141,11 +187,12 @@ void addsubwin_ui(window_t *root, window_t *subwin, uint32_t y, uint32_t x) {
     return;
   }
   subwin->attr &= ~WINDOW_ATTR_MAIN;
-  subwin->parent = root;
+  subwin->depth_lvl = root->depth_lvl + 1;
+  subwin->parent = rooth;
   subwin->y = y, subwin->x = x;
   if (!root->subw.wins) {
     root->subw.wins = calloc(root->subw.cap = 10, sizeof(*root->subw.wins));
-    root->subw.wins[0] = subwin;
+    root->subw.wins[0] = subwinh;
     root->subw.count = 1;
     return;
   }
@@ -153,14 +200,14 @@ void addsubwin_ui(window_t *root, window_t *subwin, uint32_t y, uint32_t x) {
     root->subw.wins = realloc(root->subw.wins,
                               (root->subw.cap *= 2) * sizeof(*root->subw.wins));
     for (uint32_t i = root->subw.cap / 2; i < root->subw.cap; i++)
-      root->subw.wins[i] = NULL;
+      root->subw.wins[i] = 0;
 
-    root->subw.wins[root->subw.count++] = subwin;
+    root->subw.wins[root->subw.count++] = subwinh;
     return;
   }
   for (uint32_t i = 0; i <= root->subw.cap; i++) {
     if (!root->subw.wins[i]) {
-      root->subw.wins[i] = subwin;
+      root->subw.wins[i] = subwinh;
       root->subw.count++;
       return;
     }
@@ -168,27 +215,32 @@ void addsubwin_ui(window_t *root, window_t *subwin, uint32_t y, uint32_t x) {
   LOG("failed to attach subwindow %p on root %p", subwin, root);
 }
 
-void rmsubwin_ui(window_t *root, window_t *subwin) {
+void rmsubwin_ui(window_handle_t rooth, window_handle_t subwinh) {
   // subwin->attr |= WINDOW_ATTR_MAIN; // not a subwindow anymore but can be
   // drawn
+  window_t *root = WUNHANDLE(rooth);
   for (uint32_t i = 0; i < root->subw.cap; i++)
-    if (root->subw.wins[i] == subwin) {
-      root->subw.wins[i] = NULL;
+    if (root->subw.wins[i] == subwinh) {
+      root->subw.wins[i] = 0;
       root->subw.count--;
     }
 }
 
-void getwinyx_ui(const window_t *win, uint32_t *y, uint32_t *x) {
+void getwinyx_ui(const window_handle_t winh, uint32_t *y, uint32_t *x) {
+  window_t *win = window_pool.wins + (uintptr_t)winh - 1;
   *y = win->y;
   *x = win->x;
 }
 
-void getwinhw_ui(const window_t *win, uint32_t *height, uint32_t *width) {
+void getwinhw_ui(const window_handle_t winh, uint32_t *height,
+                 uint32_t *width) {
+  window_t *win = window_pool.wins + (uintptr_t)winh - 1;
   *height = win->h;
   *width = win->w;
 }
 
-void *bdbfwin_ui(window_t *win, void *data) {
+void *bdbfwin_ui(window_handle_t winh, void *data) {
+  window_t *win = window_pool.wins + (uintptr_t)winh - 1;
   if (!win->type) {
     LOG("couldn't bind buffer %p to window %p, reason :"
         " cannot bind buffer to window of type 'NONE'",
@@ -200,6 +252,9 @@ void *bdbfwin_ui(window_t *win, void *data) {
   return (void *)tmp;
 }
 
-void bdwininpclbk_ui(window_t *win, window_input_callback_pfn pfn) {
+void bdwininpclbk_ui(window_handle_t winh, window_input_callback_pfn pfn) {
+  window_t *win = window_pool.wins + (uintptr_t)winh - 1;
   win->pfn_input_callback = pfn;
 }
+
+void makecurrent_ui(window_handle_t win) { push_current(win); }

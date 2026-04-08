@@ -1,6 +1,5 @@
 CC := clang -O3
-CFLAGS := -Wall -Wextra -Wno-old-style-declaration -Wno-unknown-warning-option -Wno-comment -pedantic -std=c23
-
+CFLAGS := -Wall -Wextra -Wno-old-style-declaration -Wno-unknown-warning-option -Wno-comment -Wno-gnu-zero-variadic-macro-arguments -pedantic -std=c23
 
 .PHONY:
 	all
@@ -19,7 +18,7 @@ force_build: clean all
 
 CORE_OBJS:= main.o loader.o core/core.o core/callback.o ui.o header.o
 CORE_FLAGS := -DCORE
-CORE_LIB :=
+CORE_LIB := -ldl
 CORE_HEADERS := ui.h header.h
 
 
@@ -48,8 +47,8 @@ header.o: header.h
 ################## UI ####################
 
 UI_OBJS := ui/ui.o ui/dlc.o ui/decl.o
-UI_LIBS := -lncurses -lpthread
-UI_FLAG := -fPIC -Wno-gnu-zero-variadic-macro-arguments -Wno-format-pedantic
+UI_LIBS := -lncurses -lpthread -ldl
+UI_FLAG := -fPIC -Wno-format-pedantic
 
 ui.so: $(UI_OBJS)
 	$(CC) $(UI_LIBS) -shared $^ -o $@
