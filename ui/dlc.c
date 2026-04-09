@@ -2,6 +2,7 @@
 
 #include "./decl.h"
 
+// ui.h not included
 extern void refresh_ui(void);
 
 static inline void ui_input_clbk(uint8_t key) {
@@ -272,17 +273,17 @@ window_handle_t next_current() {
     }
     // should not be the case because there is more than two subwindows
     assert(i < parent->subw.count);
-    for (uint32_t j = i + 1 ; j!= i; j = (j+1)%parent->subw.count) {
+    for (uint32_t j = i + 1; j != i; j = (j + 1) % parent->subw.count) {
       if (parent->subw.wins[i] & WINDOW_ATTR_EXISTS) {
         current.current[current.ptr - 1] = parent->subw.wins[i];
       }
     }
   }
 
-  for(uint32_t i=currw; i!=currw - 1; i = (i+1)%window_pool.cap){
-    if(window_pool.wins[i].attr & WINDOW_ATTR_EXISTS){
-      current.current[current.ptr - 1] = i +1;
-      return i+1;
+  for (uint32_t i = currw; i != currw - 1; i = (i + 1) % window_pool.cap) {
+    if (window_pool.wins[i].attr & WINDOW_ATTR_EXISTS) {
+      current.current[current.ptr - 1] = i + 1;
+      return i + 1;
     }
   }
 

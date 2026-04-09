@@ -19,10 +19,12 @@ void dflt_menu_input_clbk(WINDOW const win, enum input_code_e const e,
   menu_t *menu = data;
   switch (e) {
   case CORE_DOWN:
+  case CORE_CURSOR_DOWN:
     (menu->selector < menu->choices_n - 1) ? menu->selector++
                                            : (menu->selector = 0);
     break;
   case CORE_UP:
+  case CORE_CURSOR_UP:
     menu->selector ? menu->selector-- : (menu->selector = menu->choices_n - 1);
     break;
   case CORE_SELECT:
@@ -52,7 +54,7 @@ void dflt_map_input_clbk(WINDOW const win, enum input_code_e const e,
       if (map.terrain[map.pentities[0].y - 1][map.pentities[0].x].traits &
           TERRAIN_TRAIT_crossable) {
         map.pentities[0].y--;
-        time += 500;
+        game_time += 500;
       }
     }
     break;
@@ -62,7 +64,7 @@ void dflt_map_input_clbk(WINDOW const win, enum input_code_e const e,
       if (map.terrain[map.pentities[0].y + 1][map.pentities[0].x].traits &
           TERRAIN_TRAIT_crossable) {
         map.pentities[0].y++;
-        time += 500;
+        game_time += 500;
       }
     }
     break;
@@ -72,7 +74,7 @@ void dflt_map_input_clbk(WINDOW const win, enum input_code_e const e,
       if (map.terrain[map.pentities[0].y][map.pentities[0].x - 1].traits &
           TERRAIN_TRAIT_crossable) {
         map.pentities[0].x--;
-        time += 500;
+        game_time += 500;
       }
     }
     break;
@@ -82,7 +84,7 @@ void dflt_map_input_clbk(WINDOW const win, enum input_code_e const e,
       if (map.terrain[map.pentities[0].y][map.pentities[0].x + 1].traits &
           TERRAIN_TRAIT_crossable) {
         map.pentities[0].x++;
-        time += 500;
+        game_time += 500;
       }
     }
     break;

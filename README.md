@@ -26,10 +26,17 @@ this file contains all debug infos and some random things with it
 if you want to try it
 both clang and gcc are supported, other compilers where not tested
 
-to build everything just run `make` (optional flagg :'-j4' if you want it to compile in 0.2s instead of 0.5), and maybe then `rm *.o` to remove garbage
+to build everything just run `make` (optional flagg : '-j4' if you want it to compile in 0.2s instead of 0.6s), and maybe then `rm *.o` to remove garbage
 
 ## requirement
-the only requirement is a working linux machine and ncurses-devel (for the ui)
+- aworking linux machine
+
+the libs that are used are:
+- dl
+- pthread
+- ncurses (for the ui)
+
+make sure to have the devel versions of those things (I think that dl and pthread are by default on most machine, same  goes with ncurses)
 
 # make tyour own ui
 the documentation is contain in doc.md, if you look at the function section you got all the procedure that have to be implemented

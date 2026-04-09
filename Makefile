@@ -16,7 +16,7 @@ force_build: clean all
 
 ################# CORE ###################
 
-CORE_OBJS:= main.o loader.o core/core.o core/callback.o ui.o header.o
+CORE_OBJS:= main.o loader.o core/core.o core/callback.o ui.o core/action_heap.o header.o
 CORE_FLAGS := -DCORE
 CORE_LIB := -ldl
 CORE_HEADERS := ui.h header.h
@@ -26,22 +26,25 @@ a.out: $(CORE_OBJS)
 	$(CC) $(CFLAGS) -o a.out $^
 
 main.o: main.c ui.h header.h core/callback.h types.h
-	$(CC) $(CFLAGS) $(CORE_FLAGS) -c main.c -o $@
+	$(CC) $(CFLAGS) $(CORE_FLAGS) -c $< -o $@
 
 loader.o: loader.c ui.h
-	$(CC) $(CFLAGS) $(CORE_FLAGS) -Wno-pedantic -c loader.c
+	$(CC) $(CFLAGS) $(CORE_FLAGS) -Wno-pedantic -c $<
 
 core/core.o: core/core.c header.h types.h
-	$(CC) $(CFLAGS) $(CORE_FLAGS) -c core/core.c -o $@
+	$(CC) $(CFLAGS) $(CORE_FLAGS) -c $< -o $@
 
 core/callback.o: core/callback.c core/callback.h types.h header.h
-	$(CC) $(CFLAGS) $(CORE_FLAGS) -c core/callback.c -o $@
+	$(CC) $(CFLAGS) $(CORE_FLAGS) -c $< -o $@
+
+core/action_heap.o: core/action_heap.c core/action_heap.h
+	$(CC) $(CFLAGS) $(CORE_FLAGS) -c $< -o $@
 
 ui.o: ui.h types.h
-	$(CC) $(CFLAGS) $(CORE_FLAGS) -x c -c -DIMPL -DCORE ui.h -o $@
+	$(CC) $(CFLAGS) $(CORE_FLAGS) -x c -c -DIMPL -DCORE $< -o $@
 
 header.o: header.h
-	$(CC) $(CFLAGS) $(CORE_FLAGS) -x c -c -DIMPL header.h -o $@
+	$(CC) $(CFLAGS) $(CORE_FLAGS) -x c -c -DIMPL $< -o $@
 
 
 ################## UI ####################
@@ -54,10 +57,11 @@ ui.so: $(UI_OBJS)
 	$(CC) $(UI_LIBS) -shared $^ -o $@
 
 ui/ui.o: ui/ui.c ui.h ui/decl.h types.h
-	$(CC) $(CFLAGS) $(UI_FLAG) -c ui/ui.c -o $@
+	$(CC) $(CFLAGS) $(UI_FLAG) -c $< -o $@
 
 ui/dlc.o: ui/dlc.c ui.h ui/decl.h types.h
-	$(CC) $(CFLAGS) $(UI_FLAG) -c ui/dlc.c -o $@
+	$(CC) $(CFLAGS) $(UI_FLAG) -c $< -o $@
 
-ui/decl.o: ui.h ui/decl.h types.h
-	$(CC) $(CFLAGS) $(UI_FLAG) -c -x c ui/decl.h -o $@ -DIMPL
+ui/decl.o: ui/decl.h ui.h types.h
+	$(CC) $(CFLAGS) $(UI_FLAG) -c -x c $< -o $@ -DIMPL
+

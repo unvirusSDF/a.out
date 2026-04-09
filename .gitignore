@@ -6,3 +6,4 @@ ui/*.o
 *.so
 :
 log
+todo.md

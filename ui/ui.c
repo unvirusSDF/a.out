@@ -90,7 +90,7 @@ void refresh_ui(void) {
     // LOG("win %hhu : %lx", i,window_pool.is_space_free& (1 << i) );
     if ((win->attr & (WINDOW_ATTR_EXISTS | WINDOW_ATTR_MAIN)) ==
         (WINDOW_ATTR_EXISTS | WINDOW_ATTR_MAIN)) {
-      LOG("display window %lu", i);
+      LOG("display window %lx", i + 1);
       display_window(win);
     }
   }

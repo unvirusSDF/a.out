@@ -19,7 +19,6 @@ enum window_attr_t : uint8_t {
   // subwindow must not be main, else they will be displayed twice
   WINDOW_ATTR_MAIN = 0x02,
   WINDOW_ATTR_FULLSCREEN = 0x04,
-  WINDOW_ATTR_CURRENT = 0x08,
 } typedef window_attr_t;
 
 struct window_t {

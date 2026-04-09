@@ -2,6 +2,7 @@
 #pragma once
 #endif
 
+#include "core/action_heap.h"
 #include "types.h"
 
 // functions
@@ -16,16 +17,21 @@ uint8_t run_frame(void);
 // needed, else just declare the variables
 #ifndef IMPL
 #define QUAL extern
-#define INIT(a)
+#define INIT(...)
 #else
 #define QUAL
-#define INIT(a) = a
+#define INIT(...) = __VA_ARGS__
 #endif
 
 // variables
 QUAL uint64_t millis_since_launch INIT({});
 QUAL uint64_t frame INIT({});
-QUAL uint64_t time INIT(0);
+QUAL _Atomic uint64_t game_time INIT(0);
+QUAL struct action_input_queue action_input_queue INIT({
+    .cap = 256,
+    .data = (struct action[256]){0},
+    .mutex = PTHREAD_MUTEX_INITIALIZER,
+});
 
 QUAL volatile _Atomic uint8_t something_happend_counter INIT(0);
 
