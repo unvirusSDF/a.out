@@ -2,10 +2,14 @@
 #pragma once
 #endif
 
-#include "core/action_heap.h"
+#include "core/action.h"
 #include "types.h"
 
 // functions
+
+// locate global symbol and return "symbol_name at file_name"
+// statically allocated
+const char *from_where(void*);
 
 uint8_t quit(void);
 uint8_t must_quit(void);

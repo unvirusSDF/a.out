@@ -16,7 +16,7 @@ force_build: clean all
 
 ################# CORE ###################
 
-CORE_OBJS:= main.o loader.o core/core.o core/callback.o ui.o core/action_heap.o header.o
+CORE_OBJS:= main.o loader.o core/core.o core/callback.o ui.o core/action.o header.o
 CORE_FLAGS := -DCORE
 CORE_LIB := -ldl
 CORE_HEADERS := ui.h header.h
@@ -37,7 +37,7 @@ core/core.o: core/core.c header.h types.h
 core/callback.o: core/callback.c core/callback.h types.h header.h
 	$(CC) $(CFLAGS) $(CORE_FLAGS) -c $< -o $@
 
-core/action_heap.o: core/action_heap.c core/action_heap.h
+core/action.o: core/action.c core/action.h
 	$(CC) $(CFLAGS) $(CORE_FLAGS) -c $< -o $@
 
 ui.o: ui.h types.h

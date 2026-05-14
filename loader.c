@@ -1,8 +1,18 @@
-#include <dlfcn.h>
 #include <stdio.h>
 #include <unistd.h>
 
+#define __USE_GNU
+#include <dlfcn.h>
+
 #include "ui.h"
+
+const char *from_where(void* sym){
+  static char buf[1024]={};
+  Dl_info info;
+  dladdr(sym, &info);
+  snprintf(buf, sizeof buf/sizeof*buf, "%s at %s", info.dli_sname, info.dli_fname);
+  return buf;
+}
 
 static void *lib = NULL;
 
@@ -14,19 +24,21 @@ void load_ui_lib(const char *path) {
   };
 }
 
-void load_ui_func() {
+int load_ui_func() {
   if (!lib) {
     fputs("no shared object was loaded\n", stderr);
-    return;
+    return 1;
   }
 
+  // count the errors
   uint32_t no_good = 0;
+
 #define LOAD_FUNC(name)                                                        \
   name = /*(typeof(name))*/ dlsym(lib, #name);                                 \
   if (!name) {                                                                 \
     no_good++;                                                                 \
     fputs(dlerror(), stderr);                                                  \
-    fputs("\n", stderr);                                                       \
+    fputc('\n', stderr);                                                       \
   }
 
   LOAD_FUNC(init_ui);
@@ -56,10 +68,31 @@ void load_ui_func() {
   } else {
     fputs("every ui functions loaded well, no error found\n", stderr);
   }
+  fprintf(stderr, "test: %s\n", from_where(newwin_ui));
+  return no_good;
 }
 
 void unload_ui() {
   if (lib)
     dlclose(lib);
   lib = NULL;
+
+
+  init_ui = 0;
+  close_ui = 0;
+  refresh_ui = 0;
+
+  log_ui_info = 0;
+
+  newwin_ui = 0;
+  delwin_ui = 0;
+  resizewin_ui = 0;
+  addsubwin_ui = 0;
+  rmsubwin_ui = 0;
+  getwinyx_ui = 0;
+  getwinhw_ui = 0;
+  bdbfwin_ui = 0;
+  bdwininpclbk_ui = 0;
+  makecurrent_ui = 0;
 }
+

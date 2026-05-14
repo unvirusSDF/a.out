@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "action_heap.h"
+#include "action.h"
 
 #ifndef SWAP
 #define SWAP(a, b)                                                             \

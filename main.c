@@ -12,9 +12,9 @@
 #error "stupid"
 #endif
 
-void load_ui_lib(const char *path);
-void load_ui_func();
-void unload_ui();
+extern void load_ui_lib(const char *path);
+extern int load_ui_func();
+extern void unload_ui();
 
 uint64_t get_time_millis() {
   struct timeval tv;
@@ -51,7 +51,9 @@ int main() {
   atexit(exit_clbk);
 
   load_ui_lib("./ui.so");
-  load_ui_func();
+  if (load_ui_func())
+    return 1;
+  ;
 
   log_ui_info();
 
